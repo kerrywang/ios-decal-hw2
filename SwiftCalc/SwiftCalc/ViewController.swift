@@ -22,7 +22,11 @@ class ViewController: UIViewController {
     // TODO: This looks like a good place to add some data structures.
     //       One data structure is initialized below for reference.
     var someDataStructure: [String] = [""]
-    
+    var curNum=String()
+    var prevNum=String()
+    var oper=String()
+    var shoudlCal = false
+    var justOper = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,50 +51,182 @@ class ViewController: UIViewController {
     //       Modify this one or create your own.
     func updateSomeDataStructure(_ content: String) {
         print("Update me like one of those PCs")
+        someDataStructure.append(content)
     }
     
     // TODO: Ensure that resultLabel gets updated.
     //       Modify this one or create your own.
     func updateResultLabel(_ content: String) {
         print("Update me like one of those PCs")
+        if content.characters.count>7{
+            let targetIndex=content.index(content.startIndex,offsetBy:7)
+            resultLabel.text=content.substring(to: targetIndex)
+        }
+        else{
+            resultLabel.text=content}
     }
     
     
     // TODO: A calculate method with no parameters, scary!
     //       Modify this one or create your own.
     func calculate() -> String {
-        return "0"
+        
+        return calculate(a: prevNum, b: resultLabel.text!, operation: oper)
+        
+        
     }
     
-    // TODO: A simple calculate method for integers.
+    /* TODO: A simple calculate method for integers.
     //       Modify this one or create your own.
-    func intCalculate(a: Int, b:Int, operation: String) -> Int {
+    func intCalculate(a: Int, b:Int, operation: String) -> String {
         print("Calculation requested for \(a) \(operation) \(b)")
-        return 0
-    }
+        var result:Double
+        switch operation{
+        case "-":  result = a-b
+        case "+":  return String(a+b)
+        case "*":  return String(a*b)
+        case "/":  return String(a/b)
+        default: return "0"
+        }
+    }*/
     
     // TODO: A general calculate method for doubles
     //       Modify this one or create your own.
-    func calculate(a: String, b:String, operation: String) -> Double {
+    func calculate(a: String, b:String, operation: String) -> String {
         print("Calculation requested for \(a) \(operation) \(b)")
-        return 0.0
+        let c=Double(a)!
+        let d=Double(b)!
+        var result:Double
+        switch operation{
+        case "-":  result = c-d
+        case "+":  result = c+d
+        case "*":  result = c*d
+        case "/":  result = c/d
+        default: return ""
+        }
+        if (result > 1e6||result < -1e6||(result < 1e-5&&result > -1e-5))
+        {
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle=NumberFormatter.Style.scientific
+            numberFormatter.positiveFormat = "0.000E0"
+            numberFormatter.negativeFormat="-0.000E0"
+            numberFormatter.exponentSymbol = "e"
+            numberFormatter.maximumSignificantDigits=3
+            return numberFormatter.string(from: result as NSNumber)!
+        }
+        else{
+            let numberFormatter = NumberFormatter()
+            numberFormatter.positiveFormat = "0.000E0"
+            numberFormatter.negativeFormat="-0.000E0"
+            numberFormatter.exponentSymbol = "e"
+
+            numberFormatter.numberStyle=NumberFormatter.Style.decimal
+            numberFormatter.maximumSignificantDigits=6
+        if result.truncatingRemainder(dividingBy: 1)==0 {return String(Int(result))}
+        else{return String(result)}
+        }
+        
     }
     
     // REQUIRED: The responder to a number button being pressed.
     func numberPressed(_ sender: CustomButton) {
         guard Int(sender.content) != nil else { return }
         print("The number \(sender.content) was pressed")
-        // Fill me in!
+        // Fill me in
+        updateSomeDataStructure(sender.content)
+        var result=resultLabel.text!
+        if result=="0"||justOper {result=sender.content; justOper=false}
+        else{
+            result.append(sender.content)}
+        updateResultLabel(result)
     }
-    
+    func isOperator(oper:String)->Bool
+    {
+        if (oper=="+"||oper=="-"||oper=="*"||oper=="/")
+        {
+            return true
+        }
+        return false
+    }
     // REQUIRED: The responder to an operator button being pressed.
     func operatorPressed(_ sender: CustomButton) {
         // Fill me in!
+        if(sender.content=="C"){
+            someDataStructure=[]
+            resultLabel.text="0"
+            prevNum=""
+            shoudlCal=false
+        }
+        if(sender.content=="+/-"){
+            let result=Double(resultLabel.text!)
+            if(result!.truncatingRemainder(dividingBy: 1)==0){updateResultLabel(String(-1*Int(result!)))}
+            else{
+                updateResultLabel(String(-1*result!))
+            }
+        }
+        if isOperator(oper: sender.content){
+            justOper=true
+            if prevNum.isEmpty{
+                prevNum=resultLabel.text!
+                oper=sender.content
+                print("first round")
+            }
+            else{
+                if isOperator(oper: someDataStructure[someDataStructure.count-1]){
+                    oper=sender.content
+                    print("sec round")
+
+                }
+                else{
+                    let result=calculate()
+                    print("\(result) is the fking result")
+
+                    updateResultLabel(result)
+                    prevNum=result
+                    someDataStructure=[result]
+                    oper=sender.content
+
+                }
+            }
+            updateSomeDataStructure(sender.content)
+        }
+        if (sender.content=="="){
+            if(!prevNum.isEmpty){
+                let result = calculate()
+                prevNum=""
+                updateResultLabel(result)
+                justOper=true
+                someDataStructure=[result]
+            }
+        }
     }
     
     // REQUIRED: The responder to a number or operator button being pressed.
     func buttonPressed(_ sender: CustomButton) {
-       // Fill me in!
+        var result = resultLabel.text!
+        if(sender.content=="."){
+            if justOper{
+                updateResultLabel("0.")
+                updateSomeDataStructure("0")
+                justOper=false}
+            else{
+                result.append(".")
+                updateResultLabel(result)
+                updateSomeDataStructure("0")}
+        }
+        if(sender.content=="0"){
+            if result != "0"{
+                if justOper{
+                    updateResultLabel("0")
+                    updateSomeDataStructure("0")
+                    justOper=false}
+                else{
+                result.append("0")
+                updateResultLabel(result)
+                updateSomeDataStructure("0")}
+            }
+        }
+
     }
     
     // IMPORTANT: Do NOT change any of the code below.
